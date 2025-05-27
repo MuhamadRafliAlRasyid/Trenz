@@ -1,33 +1,20 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AddressController;
-use App\Http\Controllers\CartItemController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\DeliveryController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\TransactionDetailsController;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
 
 // Public Routes
-Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/login', [AuthController::class, 'login']);
 
-// Protected Routes (auth:sanctum)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('addresses', AddressController::class);
-    Route::apiResource('cart-items', CartItemController::class);
-    Route::apiResource('categories', CategoryController::class);
-    Route::apiResource('deliveries', DeliveryController::class);
-    Route::apiResource('notifications', NotificationController::class);
-    Route::apiResource('payments', PaymentController::class);
-    Route::apiResource('products', ProductController::class);
-    Route::apiResource('transactions', TransactionController::class);
-    Route::apiResource('transaction-details', TransactionDetailsController::class);
-
+    Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/refresh-token', [AuthController::class, 'refreshToken']);
 });

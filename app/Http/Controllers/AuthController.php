@@ -2,74 +2,122 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    // Register
+    /**
+     * Register a new user
+     */
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'role' => 'in:admin,customer,courier', // optional
+        $validator = Validator::make($request->all(), [
+            "name" => "required|string",
+            "email" => "required|string|email|unique:users,email",
+            "password" => "required|string|min:6|confirmed", // uses password_confirmation
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => $request->role ?? 'customer', // default
+            "name"     => $request->name,
+            "email"    => $request->email,
+            "password" => bcrypt($request->password)
         ]);
 
         return response()->json([
-            'message' => 'Register berhasil',
-            'user' => $user
+            "status"  => true,
+            "message" => "User registered successfully",
+            "data"    => $user
         ], 201);
     }
 
-    // Login
+    /**
+     * Login a user and generate API token
+     */
     public function login(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
+        $validator = Validator::make($request->all(), [
+            "email"    => "required|email",
+            "password" => "required|string"
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email atau password salah'],
-            ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
         }
 
-        $token = $user->createToken('mobile_token')->plainTextToken;
+        // Check user
+        $user = User::where("email", $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                "status"  => false,
+                "message" => "Invalid email or password"
+            ], 401);
+        }
+
+        // Create token
+        $token = $user->createToken("auth_token")->plainTextToken;
 
         return response()->json([
-            'message' => 'Login berhasil',
-            'user' => $user,
-            'token' => $token,
+            "status" => true,
+            "message" => "Login successful",
+            "data" => [
+                "user" => $user,
+                "token" => $token
+            ]
         ]);
     }
 
-    // Logout
+    /**
+     * Logout (Invalidate current token)
+     */
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
 
         return response()->json([
-            'message' => 'Logout berhasil'
+            "status" => true,
+            "message" => "User logged out successfully"
         ]);
     }
 
-    // Profile (opsional)
+    /**
+     * Refresh Token (generate new token)
+     */
+    public function refreshToken(Request $request)
+    {
+        $request->user()->tokens()->delete();
+
+        $newToken = $request->user()->createToken("auth_token")->plainTextToken;
+
+        return response()->json([
+            "status" => true,
+            "message" => "Token refreshed successfully",
+            "access_token" => $newToken
+        ]);
+    }
+
+    /**
+     * Get authenticated user profile
+     */
     public function profile(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            "status" => true,
+            "message" => "User profile fetched successfully",
+            "data" => $request->user()
+        ]);
     }
 }
