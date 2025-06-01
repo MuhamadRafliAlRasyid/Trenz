@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -17,7 +18,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             "name" => "required|string",
             "email" => "required|string|email|unique:users,email",
-            "password" => "required|string|min:6|confirmed", // uses password_confirmation
+            "password" => "required|string|min:6|confirmed", // ✅ confirmed butuh password_confirmation
         ]);
 
         if ($validator->fails()) {
@@ -27,17 +28,29 @@ class AuthController extends Controller
             ], 422);
         }
 
+        $verificationCode = rand(1000, 9999); // ✅ 4 digit code
+
         $user = User::create([
-            "name"     => $request->name,
-            "email"    => $request->email,
-            "password" => bcrypt($request->password)
+            "name" => $request->name,
+            "email" => $request->email,
+            "password" => bcrypt($request->password),
+            "verification_code" => $verificationCode
         ]);
 
+        // Kirim email verifikasi
+        Mail::raw("Your email verification code is: $verificationCode", function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject("Email Verification Code");
+        });
+
         return response()->json([
-            "status"  => true,
-            "message" => "User registered successfully",
-            "data"    => $user
-        ], 201);
+            'status' => true,
+            'message' => 'Registration successful. Please check your email for the verification code.',
+            'data' => [
+                'user' => $user,
+                'token' => $user->createToken('api-token')->plainTextToken
+            ]
+        ]);
     }
 
     /**
@@ -65,6 +78,14 @@ class AuthController extends Controller
                 "status"  => false,
                 "message" => "Invalid email or password"
             ], 401);
+        }
+
+        // Check verification
+        if (!$user->email_verified_at) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Please verify your email before logging in.'
+            ], 403);
         }
 
         // Create token
@@ -107,6 +128,52 @@ class AuthController extends Controller
             "message" => "Token refreshed successfully",
             "access_token" => $newToken
         ]);
+    }
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'User not found'], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json(['status' => true, 'message' => 'Email already verified']);
+        }
+
+        if ($user->verification_code === $request->code) {
+            $user->email_verified_at = now();
+            $user->verification_code = null;
+            $user->save();
+
+            return response()->json(['status' => true, 'message' => 'Email verified successfully']);
+        }
+
+        return response()->json(['status' => false, 'message' => 'Invalid verification code'], 400);
+    }
+    public function resendVerificationEmail(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->email_verified_at) {
+            return response()->json(['status' => true, 'message' => 'Email already verified.']);
+        }
+
+        $verificationCode = rand(1000, 9999);
+        $user->verification_code = $verificationCode;
+        $user->save();
+
+        Mail::raw("Your email verification code is: $verificationCode", function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject("Resend Email Verification Code");
+        });
+
+        return response()->json(['status' => true, 'message' => 'Verification code resent.']);
     }
 
     /**

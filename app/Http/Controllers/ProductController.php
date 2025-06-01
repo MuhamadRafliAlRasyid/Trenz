@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
@@ -12,7 +13,13 @@ class ProductController extends Controller
      */
     public function index()
     {
-        //
+        $products = Product::with('category')->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product list retrieved successfully.',
+            'data' => $products
+        ]);
     }
 
     /**
@@ -20,8 +27,72 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|url' // validasi sebagai URL
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $product = Product::create($request->only([
+            'category_id',
+            'name',
+            'description',
+            'price',
+            'stock',
+            'image'
+        ]));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product created successfully with image URL.',
+            'data' => $product
+        ]);
     }
+    public function update(Request $request, Product $product)
+    {
+        $validator = Validator::make($request->all(), [
+            'category_id' => 'sometimes|exists:categories,id',
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'sometimes|numeric|min:0',
+            'stock' => 'sometimes|integer|min:0',
+            'image' => 'nullable|url'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $product->update($request->only([
+            'category_id',
+            'name',
+            'description',
+            'price',
+            'stock',
+            'image'
+        ]));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product updated successfully.',
+            'data' => $product
+        ]);
+    }
+
+
 
     /**
      * Display the specified resource.
@@ -34,10 +105,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Product $product)
-    {
-        //
-    }
+
 
     /**
      * Remove the specified resource from storage.

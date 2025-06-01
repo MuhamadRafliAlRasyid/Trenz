@@ -6,7 +6,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // Ganti '*' dengan domain frontend kamu (misal: http://localhost:8100)
+    'allowed_origins' => ['http://localhost:4200'], // Ganti '*' dengan domain frontend kamu (misal: http://localhost:8100)
 
     'allowed_origins_patterns' => [],
 
