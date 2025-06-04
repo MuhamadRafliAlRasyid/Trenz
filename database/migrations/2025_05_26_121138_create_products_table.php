@@ -13,12 +13,17 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // pemilik produk (pedagang)
             $table->string('name');
             $table->text('description')->nullable();
-            $table->decimal('price', 12, 2);
-            $table->integer('stock')->default(0);
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
+            $table->string('sku')->unique();
             $table->string('image')->nullable();
+            $table->decimal('price', 12, 2);
+            $table->integer('stock');
+            $table->string('unit')->default('pcs');
+            $table->float('weight')->default(0); // untuk ongkos kirim
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

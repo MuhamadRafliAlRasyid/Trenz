@@ -3,41 +3,44 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     /**
      * Register a new user
      */
-    public function register(Request $request)
+    // Register Customer
+    public function registerCustomer(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            "name" => "required|string",
-            "email" => "required|string|email|unique:users,email",
-            "password" => "required|string|min:6|confirmed", // ✅ confirmed butuh password_confirmation
+            'name' => 'required|string',
+            'email' => 'required|string|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
 
-        $verificationCode = rand(1000, 9999); // ✅ 4 digit code
+        $verificationCode = rand(1000, 9999);
 
         $user = User::create([
-            "name" => $request->name,
-            "email" => $request->email,
-            "password" => bcrypt($request->password),
-            "verification_code" => $verificationCode
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'customer',
+            'verification_code' => $verificationCode,
         ]);
 
-        // Kirim email verifikasi
         Mail::raw("Your email verification code is: $verificationCode", function ($message) use ($user) {
             $message->to($user->email)
                 ->subject("Email Verification Code");
@@ -45,62 +48,55 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Registration successful. Please check your email for the verification code.',
+            'message' => 'Customer registered. Check your email for verification code.',
             'data' => [
                 'user' => $user,
-                'token' => $user->createToken('api-token')->plainTextToken
-            ]
+                'token' => $user->createToken('api-token')->plainTextToken,
+            ],
         ]);
     }
 
-    /**
-     * Login a user and generate API token
-     */
-    public function login(Request $request)
+    // Register Courier
+    public function registerCourier(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            "email"    => "required|email",
-            "password" => "required|string"
+            'name' => 'required|string',
+            'email' => 'required|string|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+            // Kamu bisa tambahkan validasi tambahan untuk courier disini
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => $validator->errors()->first(),
             ], 422);
         }
 
-        // Check user
-        $user = User::where("email", $request->email)->first();
+        $verificationCode = rand(1000, 9999);
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                "status"  => false,
-                "message" => "Invalid email or password"
-            ], 401);
-        }
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'courier',
+            'verification_code' => $verificationCode,
+        ]);
 
-        // Check verification
-        if (!$user->email_verified_at) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Please verify your email before logging in.'
-            ], 403);
-        }
-
-        // Create token
-        $token = $user->createToken("auth_token")->plainTextToken;
+        Mail::raw("Your email verification code is: $verificationCode", function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject("Email Verification Code");
+        });
 
         return response()->json([
-            "status" => true,
-            "message" => "Login successful",
-            "data" => [
-                "user" => $user,
-                "token" => $token
-            ]
+            'status' => true,
+            'message' => 'Courier registered. Check your email for verification code.',
+            'data' => [
+                'user' => $user,
+                'token' => $user->createToken('api-token')->plainTextToken,
+            ],
         ]);
     }
-
     /**
      * Logout (Invalidate current token)
      */

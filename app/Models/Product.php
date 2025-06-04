@@ -3,34 +3,42 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'category_id',
+        'user_id',
         'name',
         'description',
+        'category_id',
+        'sku',
+        'image',
         'price',
         'stock',
-        'image',
+        'unit',
+        'weight',
+        'is_active',
     ];
 
+    protected $appends = ['image_url'];
 
-    // Produk milik kategori
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    // Produk dalam keranjang
-    public function cartsItems()
+    // Accessor image_url
+    public function getImageUrlAttribute()
     {
-        return $this->hasMany(CartItem::class);
-    }
-
-    // Produk yang dibeli dalam transaksi
-    public function transactionDetails()
-    {
-        return $this->hasMany(TransactionDetail::class);
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 }

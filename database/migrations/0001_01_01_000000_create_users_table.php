@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('role', ['customer', 'admin', 'courier'])->default('customer');
             $table->text('fcm_token')->nullable(); // For push notifications
+            $table->string('verification_code')->nullable();
             $table->timestamps();
         });
 
