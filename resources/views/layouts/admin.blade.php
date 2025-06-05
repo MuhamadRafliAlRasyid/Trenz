@@ -1,4 +1,3 @@
-<!-- resources/views/layouts/admin.blade.php -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,81 +12,141 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-hidden {
+            transform: translateX(-100%);
+        }
+
+        .content-expanded {
+            margin-left: 0 !important;
+        }
+
+        .sidebar .sidebar-links a {
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar .sidebar-links a span {
+            margin-left: 8px;
+        }
+
+        .sidebar-hidden .sidebar-links a span {
+            display: none;
+        }
+
+        .sidebar-hidden .sidebar-links a i {
+            margin-left: 0;
+        }
+
+        #userDropdownMenu {
+            z-index: 50;
+        }
+
+        #toggleSidebarBtn {
+            color: white;
+            background-color: #5979f5;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800">
-    <!-- Navbar -->
-    <nav class="bg-white border-b shadow p-4 flex justify-between items-center">
-        <div class="text-xl font-bold text-[#FF5C39] flex items-center gap-2">
-            <img src="{{ asset('img/logo.png') }}" alt="logo" class="w-12 h-13">
-            TRENDZ Admin
-        </div>
+<body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
+    <!-- Wrapper -->
+    <div class="flex flex-col h-screen w-screen overflow-hidden">
 
-        <div class="relative flex items-center gap-4 text-sm">
-            <span class="font-medium">{{ Auth::user()->name }}</span>
-            <button
-                class="flex items-center space-x-2 text-sm bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg px-4 py-2">
-                <i class="fas fa-user-circle"></i>
-                <span>{{ Auth::user()->name }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </button>
-
-            <div class="absolute right-0 w-48 mt-2 bg-white border rounded-lg shadow-lg hidden dropdown-menu">
-                <form method="POST" action="{{ route('admin.logout') }}">
-                    @csrf
-                    <button type="submit"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Logout</button>
-                </form>
+        <!-- Navbar -->
+        <nav class="bg-white border-b shadow p-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <button id="toggleSidebarBtn" class="text-2xl p-2">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="text-xl font-bold text-[#5979f5] flex items-center gap-2">
+                    <img src="{{ asset('img/logo.png') }}" alt="logo" class="w-10 h-10">
+                    TRENDZ Admin
+                </div>
             </div>
+
+            <div class="relative flex items-center gap-4 text-sm">
+                <button id="userDropdownBtn"
+                    class="flex items-center bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg px-4 py-2">
+                    <i class="fas fa-user-circle mr-2"></i> {{ Auth::user()->name }}
+                    <i class="fas fa-chevron-down ml-2"></i>
+                </button>
+                <div id="userDropdownMenu" class="absolute right-0 mt-12 bg-white border rounded-lg shadow-lg hidden">
+                    <a href="{{ route('admin.settings') }}"
+                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Settings</a>
+                    <form method="POST" action="{{ route('admin.logout') }}">
+                        @csrf
+                        <button type="submit"
+                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Section -->
+        <div class="flex flex-1 w-full h-full overflow-hidden">
+            <!-- Sidebar -->
+            <aside id="sidebar"
+                class="sidebar w-64 bg-white border-r p-4 h-full transition-all md:relative absolute z-20">
+                <nav class="mt-8 space-y-3 sidebar-links text-[15px]">
+                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
+                        <i class="fas fa-chart-line"></i><span>Dashboard</span>
+                    </a>
+                    <a href="{{ route('admin.products.index') }}"
+                        class="flex items-center gap-2 text-[#5979f5] font-semibold">
+                        <i class="fas fa-box"></i><span>Produk</span>
+                    </a>
+                    <a href="{{ route('admin.categories.index') }}"
+                        class="flex items-center gap-2 text-[#5979f5] font-semibold">
+                        <i class="fas fa-tags"></i><span>Kategori</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-2 hover:text-[#5979f5]">
+                        <i class="fas fa-shopping-cart"></i><span>Transaksi</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-2 hover:text-[#5979f5]">
+                        <i class="fas fa-truck"></i><span>Pengiriman</span>
+                    </a>
+                    <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
+                        <i class="fas fa-users"></i><span>Pengguna</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-2 hover:text-[#5979f5]">
+                        <i class="fas fa-chart-pie"></i><span>Laporan</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-gray-100">
+                @yield('content')
+            </main>
         </div>
-    </nav>
-
-    <!-- Sidebar + Main -->
-    <div class="flex">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white border-r min-h-screen p-4">
-            <nav class="space-y-2 text-sm">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 hover:text-[#FF5C39]">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </a>
-                <a href="{{ route('admin.products.index') }}"
-                    class="flex items-center gap-2 text-[#FF5C39] font-semibold">
-                    <i class="fas fa-box"></i> Produk & Kategori
-                </a>
-                <a href="#" class="flex items-center gap-2 hover:text-[#FF5C39]">
-                    <i class="fas fa-shopping-cart"></i> Transaksi
-                </a>
-                <a href="#" class="flex items-center gap-2 hover:text-[#FF5C39]">
-                    <i class="fas fa-truck"></i> Pengiriman
-                </a>
-                <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2 hover:text-[#FF5C39]">
-                    <i class="fas fa-users"></i> Pengguna
-                </a>
-                <a href="#" class="flex items-center gap-2 hover:text-[#FF5C39]">
-                    <i class="fas fa-chart-pie"></i> Laporan
-                </a>
-            </nav>
-        </aside>
-
-
-        <!-- Main Content -->
-        <main class="flex-1 p-6">
-            @yield('content')
-        </main>
     </div>
 
+    <!-- Script -->
     <script>
-        const dropdownBtn = document.querySelector('button');
-        const dropdownMenu = document.querySelector('.dropdown-menu');
+        const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+        const sidebar = document.getElementById('sidebar');
+        const userDropdownBtn = document.getElementById('userDropdownBtn');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
 
-        dropdownBtn.addEventListener('click', () => {
-            dropdownMenu.classList.toggle('hidden');
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-hidden');
         });
 
-        window.addEventListener('click', (e) => {
-            if (!dropdownBtn.contains(e.target)) {
-                dropdownMenu.classList.add('hidden');
+        userDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdownMenu.classList.toggle('hidden');
+        });
+
+        window.addEventListener('click', function(e) {
+            if (!userDropdownBtn.contains(e.target)) {
+                userDropdownMenu.classList.add('hidden');
             }
         });
     </script>

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('role', ['customer', 'admin', 'courier'])->default('customer');
             $table->text('fcm_token')->nullable(); // For push notifications
             $table->string('verification_code')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 

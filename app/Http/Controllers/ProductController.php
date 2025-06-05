@@ -10,48 +10,41 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
-    public function index()
+    // Menampilkan daftar produk dengan filter kategori
+    public function index(Request $request)
     {
-        $products = Product::where('is_active', true)->get([
-            'id',
-            'name',
-            'price',
-            'image',
-            'category_id',
-            'description'
-        ]);
+        $categories = Category::all(); // Ambil semua kategori
+        $query = Product::query();
 
-        return view('admin.products.index', compact('products'));
-    }
-
-    public function show($id)
-    {
-        $product = Product::where('id', $id)->where('is_active', true)->first();
-
-        if (!$product) {
-            return response()->json(['status' => false, 'message' => 'Product not found'], 404);
+        // Filter berdasarkan kategori
+        if ($request->has('category_id') && $request->category_id != '') {
+            $query->where('category_id', $request->category_id);
         }
 
-        return response()->json(['status' => true, 'data' => $product]);
+        $products = $query->get(); // Ambil produk sesuai dengan filter kategori
+
+        return view('admin.products.index', compact('products', 'categories'));
     }
 
+    // Menampilkan form create produk
     public function create()
     {
         $categories = Category::all();
         return view('admin.products.create', compact('categories'));
     }
 
+    // Menampilkan form edit produk
     public function edit($id)
     {
-        $product = Product::findOrFail($id);
-        $action = route('admin.products.update', $product->id); // Pastikan ini ada
-        $isEdit = true;
-        return view('admin.products.form', compact('product', 'action', 'isEdit'));
+        $product = Product::findOrFail($id); // Cari produk berdasarkan ID
+        $categories = Category::all(); // Ambil semua kategori
+        return view('admin.products.edit', compact('product', 'categories')); // Tampilkan form edit produk
     }
 
-
+    // Menyimpan produk baru
     public function store(Request $request)
     {
+        // Validasi input produk
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'name' => 'required|string|max:255',
@@ -67,14 +60,13 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => $validator->errors()->first()
-            ], 422);
+            return response()->json(['status' => false, 'message' => $validator->errors()->first()], 422);
         }
 
+        // Ambil data input kecuali image
         $data = $request->except('image');
 
+        // Cek jika ada gambar baru
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '-' . $file->getClientOriginalName();
@@ -82,22 +74,19 @@ class ProductController extends Controller
             $data['image'] = $path;
         }
 
+        // Simpan produk baru ke database
         $product = Product::create($data);
 
-        // Redirect ke halaman produk
+        // Redirect ke halaman produk dengan pesan sukses
         return redirect()->route('admin.products.index')->with('status', 'Product created successfully');
     }
 
-
-
+    // Memperbarui produk yang ada
     public function update(Request $request, $id)
     {
-        $product = Product::find($id);
+        $product = Product::findOrFail($id); // Cari produk berdasarkan ID
 
-        if (!$product) {
-            return response()->json(['status' => false, 'message' => 'Product not found'], 404);
-        }
-
+        // Validasi data input
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
@@ -111,29 +100,35 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        // Jika validasi gagal, kirimkan error
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => $validator->errors()->first()], 422);
         }
 
+        // Ambil data kecuali image
         $data = $request->except('image');
 
+        // Handle image update
         if ($request->hasFile('image')) {
+            // Hapus gambar lama jika ada
             if ($product->image && Storage::exists('public/' . $product->image)) {
                 Storage::delete('public/' . $product->image);
             }
 
-            $filename = uniqid() . '.' . $request->image->extension();
-            $request->file('image')->storeAs('public/products', $filename);
-            $data['image'] = 'products/' . $filename;
+            // Simpan gambar baru
+            $file = $request->file('image');
+            $filename = time() . '-' . $file->getClientOriginalName();
+            $path = $file->storeAs('products', $filename, 'public');
+            $data['image'] = $path; // Simpan path gambar baru ke database
         }
 
+        // Update produk
         $product->update($data);
 
+        // Redirect ke halaman produk
         return redirect()->route('admin.products.index')->with('status', 'Product updated successfully');
     }
-
-
-
+    // Menghapus produk
     public function destroy($id)
     {
         $product = Product::find($id);
@@ -142,10 +137,12 @@ class ProductController extends Controller
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
 
+        // Hapus gambar produk jika ada
         if ($product->image && Storage::exists('public/' . $product->image)) {
             Storage::delete('public/' . $product->image);
         }
 
+        // Hapus produk
         $product->delete();
 
         // Redirect ke halaman produk

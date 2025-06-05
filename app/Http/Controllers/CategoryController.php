@@ -7,43 +7,57 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // Menampilkan semua kategori
     public function index()
     {
-        //
+        $categories = Category::all(); // Mengambil semua kategori
+        return view('admin.categories.index', compact('categories'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Menampilkan form untuk menambah kategori
+    public function create()
+    {
+        return view('admin.categories.create');
+    }
+
+    // Menyimpan kategori baru ke database
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        Category::create($request->all()); // Menyimpan kategori
+
+        return redirect()->route('admin.categories.index')->with('status', 'Category created successfully');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Category $category)
+    // Menampilkan form untuk mengedit kategori
+    public function edit($id)
     {
-        //
+        $category = Category::findOrFail($id); // Mencari kategori berdasarkan ID
+        return view('admin.categories.edit', compact('category'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Category $category)
+    // Memperbarui kategori
+    public function update(Request $request, $id)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $category = Category::findOrFail($id); // Mencari kategori
+        $category->update($request->all()); // Memperbarui kategori
+
+        return redirect()->route('admin.categories.index')->with('status', 'Category updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Category $category)
+    // Menghapus kategori
+    public function destroy($id)
     {
-        //
+        $category = Category::findOrFail($id); // Mencari kategori
+        $category->delete(); // Menghapus kategori
+
+        return redirect()->route('admin.categories.index')->with('status', 'Category deleted successfully');
     }
 }
