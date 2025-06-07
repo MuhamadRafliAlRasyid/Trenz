@@ -14,14 +14,17 @@ return new class extends Migration
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('recipient_name');
+            $table->string('receiver_name');
             $table->string('phone');
-            $table->text('full_address');
+            $table->string('province');
             $table->string('city');
+            $table->string('district');
             $table->string('postal_code');
+            $table->text('detail');
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

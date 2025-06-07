@@ -2,20 +2,30 @@
 
 return [
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    /*
+    |--------------------------------------------------------------------------
+    | Cross-Origin Resource Sharing (CORS) Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the CORS settings for your Laravel backend.
+    |
+    */
+
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:4200'], // Ganti '*' dengan domain frontend kamu (misal: http://localhost:8100)
+    'allowed_origins' => ['http://localhost:4200'],
 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Authorization', 'Content-Disposition'],
 
     'max_age' => 0,
 
     'supports_credentials' => true,
+
 
 ];

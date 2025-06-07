@@ -14,6 +14,11 @@
     <div class="min-h-screen flex items-center justify-center bg-gray-50">
         <div class="w-full max-w-md p-6 bg-white rounded-lg shadow-lg border border-gray-200">
             <h2 class="text-center text-3xl font-bold text-[#2c3c84] mb-6">Admin Login</h2>
+            @if (session('status'))
+                <div class="alert alert-success">
+                    {{ session('status') }}
+                </div>
+            @endif
 
             <!-- Login Form -->
             <form method="POST" action="{{ route('admin.login.submit') }}">

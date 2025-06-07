@@ -25,6 +25,22 @@ class ProductController extends Controller
 
         return view('admin.products.index', compact('products', 'categories'));
     }
+    // API endpoint untuk mobile frontend
+    public function apiIndex()
+    {
+        $products = Product::with('category')->where('is_active', true)->get();
+
+        // Ubah path gambar menjadi URL publik
+        $products->transform(function ($product) {
+            $product->image = $product->image
+                ? asset('storage/' . $product->image)
+                : null;
+            return $product;
+        });
+
+        return response()->json($products);
+    }
+
 
     // Menampilkan form create produk
     public function create()

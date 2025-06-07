@@ -41,9 +41,15 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
+        // Untuk Web (Session-Based Login)
         if (Auth::guard('web')->attempt(array_merge($credentials, ['role' => 'admin']), $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+
+            // Berikan token API kepada admin setelah login via web
+            $user = Auth::user();
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            return redirect()->route('admin.dashboard')->with('token', $token);  // Redirect dengan token API
         }
 
         throw ValidationException::withMessages([
@@ -130,10 +136,23 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::guard('web')->logout(); // Log out the admin
-        $request->session()->invalidate(); // Invalidate the session
-        $request->session()->regenerateToken(); // Regenerate CSRF token to prevent session fixation
+        // Pastikan user terautentikasi
+        $user = $request->user();
 
-        return redirect()->route('admin.login.form'); // Redirect to login form
+        if ($user) {
+            // Menghapus semua token yang terkait dengan pengguna yang sedang aktif
+            $user->tokens()->delete();
+
+            // Logout untuk web
+            Auth::guard('web')->logout(); // Log out admin via web
+            $request->session()->invalidate(); // Menghapus session
+            $request->session()->regenerateToken(); // Menghasilkan CSRF token yang baru untuk mencegah session fixation
+
+            // Redirect ke halaman login admin
+            return redirect()->route('admin.login.form')->with('status', 'You have been logged out successfully');
+        }
+
+        // Jika tidak ada pengguna terautentikasi, redirect ke halaman login
+        return redirect()->route('admin.login.form')->with('status', 'User not authenticated or token invalid');
     }
 }

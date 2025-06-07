@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AddressController extends Controller
 {
-    // Menampilkan semua alamat user yang login
     public function index()
     {
         $user = Auth::user();
