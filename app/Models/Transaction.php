@@ -2,34 +2,42 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'address_id',
-        'payment_status',
-        'delivery_status',
+        'courier_id',
         'total_price',
+        'status',
     ];
 
+    // Relasi dengan model User (Pelanggan)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // Relasi dengan model Address (Alamat)
     public function address()
     {
         return $this->belongsTo(Address::class);
     }
 
-    public function details()
+    // Relasi dengan model Courier (Kurir)
+    public function courier()
     {
-        return $this->hasMany(TransactionDetail::class);
+        return $this->belongsTo(User::class, 'courier_id');
     }
-    public function payment()
+
+    // Relasi dengan model TransactionDetail (Detail Transaksi)
+    public function transactionDetails()
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasMany(TransactionDetails::class);
     }
 }

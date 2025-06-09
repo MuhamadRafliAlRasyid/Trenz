@@ -54,6 +54,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/addresses/{id}', [AddressController::class, 'show']);
     Route::put('/addresses/{id}', [AddressController::class, 'update']);
     Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+    //transactions-related routes
+    // Route untuk menyimpan transaksi baru
+    Route::post('/transactions', [TransactionController::class, 'store']);
+    // Route untuk mengambil semua transaksi
+    Route::get('/transactions', [TransactionController::class, 'index']);
+    // Route untuk mengambil transaksi berdasarkan ID
+    Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    // Route untuk memperbarui status transaksi
+    Route::put('/transactions/{id}/status', [TransactionController::class, 'updateStatus']);
 });
 
 // Admin-only API (via middleware role:admin)

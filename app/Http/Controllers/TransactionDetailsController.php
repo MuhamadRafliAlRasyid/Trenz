@@ -2,48 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TransactionDetail;
 use App\Models\TransactionDetails;
 use Illuminate\Http\Request;
 
 class TransactionDetailsController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Menyimpan detail transaksi baru
     public function store(Request $request)
     {
-        //
-    }
+        $validatedData = $request->validate([
+            'transaction_id' => 'required|exists:transactions,id',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer',
+            'price_per_item' => 'required|numeric',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(TransactionDetails $transactionDetails)
-    {
-        //
-    }
+        $transactionDetail = TransactionDetails::create($validatedData);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, TransactionDetails $transactionDetails)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(TransactionDetails $transactionDetails)
-    {
-        //
+        return response()->json([
+            'message' => 'Detail transaksi berhasil disimpan.',
+            'transaction_detail' => $transactionDetail,
+        ]);
     }
 }
