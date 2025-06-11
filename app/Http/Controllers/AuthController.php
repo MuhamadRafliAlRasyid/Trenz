@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+
 
 class AuthController extends Controller
 {
@@ -82,6 +84,64 @@ class AuthController extends Controller
             'status' => false,
             'message' => 'Invalid credentials',
         ], 401);
+    }
+    public function updateProfile(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user(); // Fetch authenticated user
+
+        // Validation for the request
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'password' => 'nullable|string|min:6|confirmed', // optional password
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Optional image
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        // Directly update fields
+        $user->name = $request->name;
+
+        // Update password if provided
+        if ($request->password) {
+            $user->password = Hash::make($request->password);
+        }
+
+        // Handle image upload if provided
+        if ($request->hasFile('image')) {
+            // Delete the old image if exists
+            if ($user->image) {
+                Storage::delete($user->image);
+            }
+
+            // Store the new image
+            $imagePath = $request->file('image')->store('profile_images', 'public');
+            $user->image = $imagePath;
+        }
+
+        // Save changes to the user model explicitly
+        try {
+            $user->save(); // Ensure the model gets updated and saved
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update profile. ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Account settings updated successfully',
+            'data' => [
+                'name' => $user->name,
+                'image' => $user->image ? asset('storage/' . $user->image) : null,
+            ],
+        ]);
     }
 
     /**
@@ -245,10 +305,19 @@ class AuthController extends Controller
      */
     public function profile(Request $request)
     {
+        $user = $request->user();
+
         return response()->json([
-            "status" => true,
-            "message" => "User profile fetched successfully",
-            "data" => $request->user()
+            'status' => true,
+            'message' => 'User profile fetched successfully',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'profile_picture' => $user->image
+                    ? asset('storage/' . $user->image)
+                    : null,
+            ],
         ]);
     }
 }

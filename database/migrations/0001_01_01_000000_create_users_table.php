@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('fcm_token')->nullable(); // For push notifications
             $table->string('verification_code')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->string('image')->nullable();
             $table->timestamps();
         });
 

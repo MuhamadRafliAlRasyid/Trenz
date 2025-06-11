@@ -11,7 +11,7 @@ use App\Http\Controllers\{
     CategoryController,
     TransactionController,
     CartItemController,
-    AddressController
+    AddressController,
 };
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -33,13 +33,19 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerificationE
 // Logout and refresh token
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/refresh-token', [AuthController::class, 'refreshToken']);
+Route::middleware('auth:sanctum')->get('/transactions/status', [TransactionController::class, 'getCategorizedTransactions']);
+
+
 
 Route::middleware('auth:sanctum')->group(function () {
     // Product-related routes
     Route::get('/products', [ProductController::class, 'apiIndex']);
 
     // User profile and authentication
+
     Route::get('/profile', [AuthController::class, 'profile']);
+    Route::post('/profile', [UserController::class, 'updateProfile']); // jika pakai _method: PUT
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/refresh-token', [AuthController::class, 'refreshToken']);
 
@@ -58,11 +64,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route untuk menyimpan transaksi baru
     Route::post('/transactions', [TransactionController::class, 'store']);
     // Route untuk mengambil semua transaksi
-    Route::get('/transactions', [TransactionController::class, 'index']);
     // Route untuk mengambil transaksi berdasarkan ID
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+
     // Route untuk memperbarui status transaksi
     Route::put('/transactions/{id}/status', [TransactionController::class, 'updateStatus']);
+
+    // Corrected route for categorized transactions
+    Route::get('/transactions/category', [TransactionController::class, 'getCategorizedTransactions']);
 });
 
 // Admin-only API (via middleware role:admin)

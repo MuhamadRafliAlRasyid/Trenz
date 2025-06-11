@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\TransactionDetail;
@@ -61,9 +62,12 @@ class TransactionController extends Controller
     }
 
     // Menampilkan semua transaksi
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::with(['user', 'address', 'transactionDetails.product'])->get();
+        $status = $request->query('status', 'pending'); // default status 'pending'
+
+        $transactions = Transaction::where('status', $status)->get();
+
         return response()->json($transactions);
     }
 
@@ -90,5 +94,36 @@ class TransactionController extends Controller
             'message' => 'Status transaksi berhasil diperbarui.',
             'transaction' => $transaction,
         ]);
+    }
+    public function getCategorizedTransactions(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        Log::info('User ID: ' . $user->id);
+
+        $transactions = Transaction::where('user_id', $user->id)->get();
+
+        Log::info('Total transaksi ditemukan: ' . $transactions->count());
+        Log::info('Transactions: ', $transactions->toArray());
+
+        $categorized = [
+            'pending' => [],
+            'paid' => [],
+            'processed' => [],
+            'shipped' => [],
+            'delivered' => [],
+        ];
+
+        foreach ($transactions as $tx) {
+            if (array_key_exists($tx->status, $categorized)) {
+                $categorized[$tx->status][] = $tx;
+            }
+        }
+
+        return response()->json($categorized);
     }
 }
