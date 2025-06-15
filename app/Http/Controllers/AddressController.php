@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Address;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AddressController extends Controller
 {
@@ -36,11 +37,25 @@ class AddressController extends Controller
     }
 
     // Menampilkan alamat tertentu
-    public function show($id)
+    public function show()
     {
-        $address = Address::where('user_id', Auth::id())->findOrFail($id);
+        $address = Address::where('user_id', Auth::id())
+            ->orderBy('id', 'asc')
+            ->firstOrFail();
+
         return response()->json($address);
     }
+    public function getDefault()
+    {
+        $address = Address::where('user_id', Auth::id())
+            ->orderBy('id', 'asc')
+            ->firstOrFail();
+
+        return response()->json($address);
+    }
+
+
+
 
     // Update alamat tertentu
     public function update(Request $request, $id)

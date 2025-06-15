@@ -12,23 +12,31 @@ use App\Http\Controllers\{
     TransactionController,
     CartItemController,
     AddressController,
+    DeliveryController,
+    ShippingController,
+    MidtransController,
+    MidtransCallbackController,
+    PaymentController
 };
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-
+use App\Models\Payment;
+use Illuminate\Http\Middleware\HandleCors;
 
 // Public API
 // Register routes
+
+
+Route::post('/login/customer', [AuthController::class, 'loginCustomer']);
+Route::post('/login/admin', [AuthController::class, 'loginAdmin']);
 Route::post('/register/customer', [AuthController::class, 'registerCustomer']);
 Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 
-// Login routes
-Route::post('/login/customer', [AuthController::class, 'loginCustomer']);
-Route::post('/login/admin', [AuthController::class, 'loginAdmin']);
 
 // Email verification and resend
 Route::post('/verify-email', [AuthController::class, 'verify']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerificationEmail']);
+
 
 // Logout and refresh token
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
@@ -58,20 +66,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/addresses', [AddressController::class, 'index']);
     Route::post('/addresses', [AddressController::class, 'store']);
     Route::get('/addresses/{id}', [AddressController::class, 'show']);
+    Route::get('/addresses/default', [AddressController::class, 'getDefault']);
     Route::put('/addresses/{id}', [AddressController::class, 'update']);
     Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
     //transactions-related routes
-    // Route untuk menyimpan transaksi baru
     Route::post('/transactions', [TransactionController::class, 'store']);
-    // Route untuk mengambil semua transaksi
-    // Route untuk mengambil transaksi berdasarkan ID
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
-
-    // Route untuk memperbarui status transaksi
     Route::put('/transactions/{id}/status', [TransactionController::class, 'updateStatus']);
-
-    // Corrected route for categorized transactions
     Route::get('/transactions/category', [TransactionController::class, 'getCategorizedTransactions']);
+
+    // Shipping & Delivery
+    Route::get('/cities', [ShippingController::class, 'getCities']);
+    Route::post('/cost', [ShippingController::class, 'getCost']);
+    Route::post('/shipping/options', [DeliveryController::class, 'getShippingOptions']);
+    Route::post('/delivery', [DeliveryController::class, 'store']);
+
+
+    // Payment
+    // Route::get('/payment/token/{id}', [PaymentController::class, 'getSnapToken']);
+    // Route::get('/payment/token/{id}', [TransactionController::class, 'getSnapToken']);
+    Route::post('/midtrans/token/{id}', [PaymentController::class, 'getSnapToken']);
+    Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification']);
+    Route::post('/midtrans/callback', [MidtransCallbackController::class, 'callback']);
 });
 
 // Admin-only API (via middleware role:admin)

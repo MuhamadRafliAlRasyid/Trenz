@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 
 class AuthController extends Controller
@@ -61,12 +62,14 @@ class AuthController extends Controller
      */
     public function loginCustomer(Request $request)
     {
+        Log::info('Login attempt', $request->all());
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
         if (Auth::attempt(array_merge($credentials, ['role' => 'customer']))) {
+            Log::info('Login success');
             $user = Auth::user();
             $token = $user->createToken('API Token')->plainTextToken;
 
@@ -79,7 +82,7 @@ class AuthController extends Controller
                 ]
             ]);
         }
-
+        Log::warning('Login failed');
         return response()->json([
             'status' => false,
             'message' => 'Invalid credentials',

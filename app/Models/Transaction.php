@@ -11,6 +11,9 @@ class Transaction extends Model
 
     protected $fillable = [
         'user_id',
+        'order_id',
+        'payment_type',
+        'payment_code',
         'address_id',
         'courier_id',
         'total_price',
@@ -39,5 +42,9 @@ class Transaction extends Model
     public function transactionDetails()
     {
         return $this->hasMany(TransactionDetails::class);
+    }
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
     }
 }

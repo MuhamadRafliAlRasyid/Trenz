@@ -5,44 +5,50 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
-use App\Models\TransactionDetail;
+use App\Models\Payment;
 use App\Models\TransactionDetails;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Midtrans\Snap;
 
 class TransactionController extends Controller
 {
     // Menyimpan transaksi baru
     public function store(Request $request)
     {
-        Log::info('Transaction creation started');  // Log the start of the transaction creation
+        Log::info('Transaction creation started');
 
-        // Validate input
+        // Validasi input
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
             'address_id' => 'required|exists:addresses,id',
-            'courier_id' => 'nullable|exists:users,id', // Make sure courier_id is nullable and validated
+            'courier_id' => 'nullable|exists:users,id',
             'total_price' => 'required|numeric',
             'status' => 'required|in:pending,paid,processed,shipped,delivered',
-            'products' => 'required|array', // Products that are bought
+            'products' => 'required|array',
         ]);
 
-        Log::info('Validated Data: ', $validatedData);  // Log the validated data
+        Log::info('Validated Data: ', $validatedData);
 
-        // If courier_id is not provided, set it to null
+        // Set courier_id jika tidak ada
         $courier_id = $validatedData['courier_id'] ?? null;
 
-        // Create transaction
+        // Buat order_id unik
+        $orderId = 'TRENZ-' . $validatedData['user_id'] . '-' . strtoupper(Str::random(8));
+
+        // Simpan transaksi
         $transaction = Transaction::create([
             'user_id' => $validatedData['user_id'],
             'address_id' => $validatedData['address_id'],
-            'courier_id' => $courier_id, // Set to null if not provided
+            'courier_id' => $courier_id,
             'total_price' => $validatedData['total_price'],
             'status' => $validatedData['status'],
+            'order_id' => $orderId,
         ]);
 
         Log::info('Transaction Created: ', ['transaction_id' => $transaction->id]);
 
-        // Create transaction details (products)
+        // Simpan detail produk
         foreach ($validatedData['products'] as $product) {
             TransactionDetails::create([
                 'transaction_id' => $transaction->id,
@@ -52,9 +58,15 @@ class TransactionController extends Controller
             ]);
         }
 
-        Log::info('Transaction Details Saved');
+        // Simpan data awal ke tabel payment
+        Payment::create([
+            'transaction_id' => $transaction->id,
+            'method' => 'midtrans',
+            'status' => 'unpaid',
+        ]);
 
-        // Return response
+        Log::info('Transaction Details and Payment Saved');
+
         return response()->json([
             'message' => 'Transaction successfully created.',
             'transaction' => $transaction,
@@ -64,21 +76,19 @@ class TransactionController extends Controller
     // Menampilkan semua transaksi
     public function index(Request $request)
     {
-        $status = $request->query('status', 'pending'); // default status 'pending'
-
+        $status = $request->query('status', 'pending');
         $transactions = Transaction::where('status', $status)->get();
-
         return response()->json($transactions);
     }
 
-    // Menampilkan transaksi berdasarkan ID
+    // Menampilkan detail transaksi berdasarkan ID
     public function show($id)
     {
-        $transaction = Transaction::with(['user', 'address', 'transactionDetails.product'])->findOrFail($id);
+        $transaction = Transaction::with(['user', 'address', 'transactionDetails.product', 'payment'])->findOrFail($id);
         return response()->json($transaction);
     }
 
-    // Mengupdate status transaksi
+    // Mengubah status transaksi
     public function updateStatus(Request $request, $id)
     {
         $validatedData = $request->validate([
@@ -87,7 +97,7 @@ class TransactionController extends Controller
 
         $transaction = Transaction::findOrFail($id);
         $transaction->update([
-            'status' => $validatedData['status'],
+            'status' => $validatedData['paid'],
         ]);
 
         return response()->json([
@@ -95,6 +105,8 @@ class TransactionController extends Controller
             'transaction' => $transaction,
         ]);
     }
+
+    // Mengambil transaksi pengguna yang sedang login dan mengkategorikan berdasarkan status
     public function getCategorizedTransactions(Request $request)
     {
         $user = Auth::user();
@@ -105,10 +117,7 @@ class TransactionController extends Controller
 
         Log::info('User ID: ' . $user->id);
 
-        $transactions = Transaction::where('user_id', $user->id)->get();
-
-        Log::info('Total transaksi ditemukan: ' . $transactions->count());
-        Log::info('Transactions: ', $transactions->toArray());
+        $transactions = Transaction::where('user_id', $user->id)->with('payment')->get();
 
         $categorized = [
             'pending' => [],
@@ -125,5 +134,33 @@ class TransactionController extends Controller
         }
 
         return response()->json($categorized);
+    }
+
+    // Menghasilkan Snap Token untuk transaksi Midtrans
+    public function getSnapToken($id)
+    {
+        $transaction = Transaction::with(['user', 'payment'])->findOrFail($id);
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $transaction->order_id,
+                'gross_amount' => $transaction->total_price,
+            ],
+            'customer_details' => [
+                'first_name' => $transaction->user->name,
+                'email' => $transaction->user->email,
+            ],
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        // Simpan Snap Token ke tabel payments
+        if ($transaction->payment) {
+            $transaction->payment->update([
+                'snap_token' => $snapToken,
+            ]);
+        }
+
+        return response()->json(['snap_token' => $snapToken]);
     }
 }
