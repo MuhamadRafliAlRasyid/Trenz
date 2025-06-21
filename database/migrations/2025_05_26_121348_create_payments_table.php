@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
             $table->string('method')->nullable(); // e.g. midtrans, qris
-            $table->enum('status', ['unpaid', 'paid', 'failed'])->default('unpaid');
+            $table->enum('status', ['unpaid', 'paid', 'failed', 'pending'])->default('unpaid');
             $table->string('snap_token')->nullable(); // For Midtrans
             $table->timestamps();
         });

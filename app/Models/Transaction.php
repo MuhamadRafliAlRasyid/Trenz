@@ -43,8 +43,17 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionDetails::class);
     }
+    public function details()
+    {
+        return $this->hasMany(TransactionDetails::class);
+    }
+
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+    public function delivery()
+    {
+        return $this->hasOne(Delivery::class);
     }
 }

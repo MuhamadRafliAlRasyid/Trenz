@@ -11,24 +11,32 @@
             <p><strong>Status:</strong> {{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</p>
 
             <h3 class="text-xl font-semibold mt-4">Riwayat Transaksi</h3>
-            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow">
-                <thead>
-                    <tr>
-                        <th class="py-2 px-4 text-left">Produk</th>
-                        <th class="py-2 px-4 text-left">Jumlah</th>
-                        <th class="py-2 px-4 text-left">Tanggal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($transactions as $transaction)
-                        <tr>
-                            <td class="py-2 px-4">{{ $transaction->product->name }}</td>
-                            <td class="py-2 px-4">{{ $transaction->quantity }}</td>
-                            <td class="py-2 px-4">{{ $transaction->created_at->format('d/m/Y') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+
+            @foreach ($transactions as $transaction)
+                <div class="mb-4">
+                    <p class="font-semibold">Transaksi #{{ $transaction->id }} -
+                        {{ $transaction->created_at->format('d/m/Y') }}</p>
+                    <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow">
+                        <thead>
+                            <tr>
+                                <th class="py-2 px-4 text-left">Produk</th>
+                                <th class="py-2 px-4 text-left">Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($transaction->transactiondetails as $detail)
+                                <tr>
+                                    <td class="py-2 px-4">{{ optional($detail->product)->name ?? 'Produk tidak ditemukan' }}
+                                    </td>
+                                    <td class="py-2 px-4">{{ $detail->quantity }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endforeach
+
+
         </div>
     </div>
 @endsection

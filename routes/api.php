@@ -37,7 +37,7 @@ Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 Route::post('/verify-email', [AuthController::class, 'verify']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerificationEmail']);
 
-
+Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification']);
 // Logout and refresh token
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/refresh-token', [AuthController::class, 'refreshToken']);
@@ -86,42 +86,41 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/payment/token/{id}', [PaymentController::class, 'getSnapToken']);
     // Route::get('/payment/token/{id}', [TransactionController::class, 'getSnapToken']);
     Route::post('/midtrans/token/{id}', [PaymentController::class, 'getSnapToken']);
-    Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification']);
     Route::post('/midtrans/callback', [MidtransCallbackController::class, 'callback']);
 });
 
-// Admin-only API (via middleware role:admin)
-Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
+// // Admin-only API (via middleware role:admin)
+// Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+//     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
-    // Settings
-    Route::get('settings', [AdminAuthController::class, 'editSettings'])->name('settings');
-    Route::put('settings', [AdminAuthController::class, 'updateSettings'])->name('settings.update');
+//     // Settings
+//     Route::get('settings', [AdminAuthController::class, 'editSettings'])->name('settings');
+//     Route::put('settings', [AdminAuthController::class, 'updateSettings'])->name('settings.update');
 
-    // Product CRUD API
-    Route::get('products', [ProductController::class, 'index'])->name('products.index');
-    Route::get('products/{id}', [ProductController::class, 'show'])->name('products.show');
-    Route::post('products', [ProductController::class, 'store'])->name('products.store');
-    Route::put('products/{id}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+//     // Product CRUD API
+//     Route::get('products', [ProductController::class, 'index'])->name('products.index');
+//     Route::get('products/{id}', [ProductController::class, 'show'])->name('products.show');
+//     Route::post('products', [ProductController::class, 'store'])->name('products.store');
+//     Route::put('products/{id}', [ProductController::class, 'update'])->name('products.update');
+//     Route::delete('products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
-    // User management API
-    Route::get('users', [UserController::class, 'index'])->name('users.index');
-    Route::get('users/{id}', [UserController::class, 'show'])->name('users.show');
-    Route::put('users/{id}', [UserController::class, 'update'])->name('users.update');
-    Route::post('users/{id}/status', [UserController::class, 'updateStatus'])->name('users.updateStatus');
+//     // User management API
+//     Route::get('users', [UserController::class, 'index'])->name('users.index');
+//     Route::get('users/{id}', [UserController::class, 'show'])->name('users.show');
+//     Route::put('users/{id}', [UserController::class, 'update'])->name('users.update');
+//     Route::post('users/{id}/status', [UserController::class, 'updateStatus'])->name('users.updateStatus');
 
-    // Category CRUD API
-    Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
-    Route::get('categories/{id}', [CategoryController::class, 'show'])->name('categories.show');
-    Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+//     // Category CRUD API
+//     Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+//     Route::get('categories/{id}', [CategoryController::class, 'show'])->name('categories.show');
+//     Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+//     Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
+//     Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    // Transaction API
-    Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('transactions/{id}', [TransactionController::class, 'show'])->name('transactions.show');
-    Route::post('transactions/{id}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.updateStatus');
-    Route::post('transactions/{id}/validate-payment', [TransactionController::class, 'validatePayment'])->name('transactions.validatePayment');
-});
+//     // Transaction API
+//     Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
+//     Route::get('transactions/{id}', [TransactionController::class, 'show'])->name('transactions.show');
+//     Route::post('transactions/{id}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.updateStatus');
+//     Route::post('transactions/{id}/validate-payment', [TransactionController::class, 'validatePayment'])->name('transactions.validatePayment');
+// });

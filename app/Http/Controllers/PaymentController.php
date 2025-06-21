@@ -49,24 +49,36 @@ class PaymentController extends Controller
                 'email' => $transaction->user->email ?? 'noemail@example.com',
             ],
             'callbacks' => [
-                'finish' => 'https://e616-36-70-31-236.ngrok-free.app/transaction-success'
-            ],
-            'notification_url' => 'https://e616-36-70-31-236.ngrok-free.app/api/midtrans/notification',
+                'callbacks' => [
+                    'finish' => 'https://2c38-36-70-25-23.ngrok-free.app/api/home',
+                ],
 
+            ],
+            'notification_url' => 'https://2c38-36-70-25-23.ngrok-free.app/api/midtrans/notification'
         ];
 
         try {
+            // Konfigurasi Midtrans
+            \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
+
+            Log::debug('Sending Snap request:', $params);
             $snapToken = Snap::getSnapToken($params);
 
             if (!$snapToken) {
                 return response()->json(['message' => 'Failed to receive Snap token.'], 500);
             }
 
-            // Simpan data token ke payment (optional)
-            $payment = $transaction->payment ?? $transaction->payments()->create();
+            // Simpan data token ke payment
+            $payment = $transaction->payment ?? $transaction->payments()->create([
+                'transaction_id' => $transaction->id,
+            ]);
+
             $payment->method = 'midtrans';
             $payment->snap_token = $snapToken;
-            $payment->status = 'paid';
+            $payment->status = 'pending'; // jangan langsung paid
             $payment->save();
 
             Log::debug('Generated Snap Token:', ['token' => $snapToken]);
@@ -83,35 +95,56 @@ class PaymentController extends Controller
      */
     public function handleNotification(Request $request)
     {
-        $notif = new Notification();
+        Log::info('Midtrans Notification Received', [
+            'json' => $request->all()
+        ]);
 
-        $transaction = $notif->transaction_status;
-        $order_id = $notif->order_id;
-        $status_code = $notif->status_code;
+        // Ambil data notifikasi
+        $data = $request->all();
 
-        // Misal: TRENZ-27-XXXX => Ambil id dari order_id
-        $parts = explode('-', $order_id);
-        $id = $parts[1]; // 27
+        // Parsing data penting
+        $orderId = $data['order_id'] ?? null;
+        $transactionStatus = $data['transaction_status'] ?? null;
 
-        $transaksi = Transaction::find($id);
+        // Ambil ID transaksi dari order_id
+        $parts = explode('-', $orderId);
+        $id = $parts[1] ?? null;
 
-        if (!$transaksi) {
+        if (!$id || !is_numeric($id)) {
+            return response()->json(['message' => 'Invalid order_id'], 400);
+        }
+
+        $transaction = Transaction::find($id);
+
+        if (!$transaction) {
             return response()->json(['message' => 'Transaction not found'], 404);
         }
 
-        if ($transaction == 'settlement') {
-            $transaksi->status = 'paid';
-            $transaksi->save();
-        } elseif ($transaction == 'pending') {
-            $transaksi->status = 'pending';
-            $transaksi->save();
-        } elseif ($transaction == 'cancel' || $transaction == 'expire') {
-            $transaksi->status = 'failed';
-            $transaksi->save();
+        // Update status transaksi
+        if ($transactionStatus === 'settlement') {
+            $transaction->status = 'paid';
+        } elseif ($transactionStatus === 'pending') {
+            $transaction->status = 'pending';
+        } elseif (in_array($transactionStatus, ['cancel', 'expire'])) {
+            $transaction->status = 'failed';
+        } else {
+            $transaction->status = $transactionStatus;
         }
+
+        $transaction->save();
+
+        // Update juga ke table `payment` jika ada
+        $payment = $transaction->payment ?? $transaction->payments()->latest()->first();
+        if ($payment) {
+            $payment->status = $transaction->status;
+            $payment->save();
+        }
+
+        Log::info("Midtrans notification processed successfully for OrderID: {$orderId}");
 
         return response()->json(['message' => 'Notification handled'], 200);
     }
+
 
 
     public function notificationHandler(Request $request)
@@ -120,7 +153,6 @@ class PaymentController extends Controller
         Log::info($request->all());
         return response()->json(['message' => 'OK']);
     }
-
 
     public function receive(Request $request)
     {
@@ -133,7 +165,6 @@ class PaymentController extends Controller
                 $serverKey
         );
 
-        // Validasi Signature Key dari Midtrans
         if ($signatureKey !== $request->signature_key) {
             return response()->json(['message' => 'Invalid signature'], 403);
         }
@@ -144,23 +175,17 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Transaction not found'], 404);
         }
 
-        if ($request->transaction_status === 'settlement' || $request->transaction_status === 'capture') {
-            $transaction->update([
-                'status' => 'paid',
-            ]);
+        if (in_array($request->transaction_status, ['settlement', 'capture'])) {
+            $transaction->status = 'paid';
         } elseif ($request->transaction_status === 'expire') {
-            $transaction->update([
-                'status' => 'expired',
-            ]);
+            $transaction->status = 'expired';
         } elseif ($request->transaction_status === 'cancel') {
-            $transaction->update([
-                'status' => 'cancelled',
-            ]);
+            $transaction->status = 'cancelled';
         } else {
-            $transaction->update([
-                'status' => $request->transaction_status,
-            ]);
+            $transaction->status = $request->transaction_status;
         }
+
+        $transaction->save();
 
         return response()->json(['message' => 'Callback received and processed']);
     }

@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard Admin - TRENDZ</title>
+    <link rel="icon" href="{{ asset('img/logo.png') }}" type="image/png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
@@ -21,10 +22,6 @@
             transform: translateX(-100%);
         }
 
-        .content-expanded {
-            margin-left: 0 !important;
-        }
-
         .sidebar .sidebar-links a {
             display: flex;
             align-items: center;
@@ -36,10 +33,6 @@
 
         .sidebar-hidden .sidebar-links a span {
             display: none;
-        }
-
-        .sidebar-hidden .sidebar-links a i {
-            margin-left: 0;
         }
 
         #userDropdownMenu {
@@ -66,26 +59,30 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="text-xl font-bold text-[#5979f5] flex items-center gap-2">
-                    <img src="{{ asset('img/logo.png') }}" alt="logo" class="w-10 h-10">
+                    <img src="{{ asset('img/logo.png') }}" alt="logo" class="w-10 h-10"
+                        onerror="this.style.display='none'">
                     TRENDZ Admin
                 </div>
             </div>
 
             <div class="relative flex items-center gap-4 text-sm">
-                <button id="userDropdownBtn"
-                    class="flex items-center bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg px-4 py-2">
-                    <i class="fas fa-user-circle mr-2"></i> {{ Auth::user()->name }}
-                    <i class="fas fa-chevron-down ml-2"></i>
-                </button>
-                <div id="userDropdownMenu" class="absolute right-0 mt-12 bg-white border rounded-lg shadow-lg hidden">
-                    <a href="{{ route('admin.settings') }}"
-                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Settings</a>
-                    <form method="POST" action="{{ route('admin.logout') }}">
-                        @csrf
-                        <button type="submit"
-                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Logout</button>
-                    </form>
-                </div>
+                @if (Auth::check())
+                    <button id="userDropdownBtn"
+                        class="flex items-center bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg px-4 py-2">
+                        <i class="fas fa-user-circle mr-2"></i> {{ Auth::user()->name }}
+                        <i class="fas fa-chevron-down ml-2"></i>
+                    </button>
+                    <div id="userDropdownMenu"
+                        class="absolute right-0 mt-12 bg-white border rounded-lg shadow-lg hidden">
+                        <a href="{{ route('admin.settings') }}"
+                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Settings</a>
+                        <form method="POST" action="{{ route('admin.logout') }}">
+                            @csrf
+                            <button type="submit"
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left">Logout</button>
+                        </form>
+                    </div>
+                @endif
             </div>
         </nav>
 
@@ -98,18 +95,18 @@
                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
                         <i class="fas fa-chart-line"></i><span>Dashboard</span>
                     </a>
-                    <a href="{{ route('admin.products.index') }}"
-                        class="flex items-center gap-2 text-[#5979f5] font-semibold">
+                    <a href="{{ route('admin.products.index') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
                         <i class="fas fa-box"></i><span>Produk</span>
                     </a>
                     <a href="{{ route('admin.categories.index') }}"
-                        class="flex items-center gap-2 text-[#5979f5] font-semibold">
+                        class="flex items-center gap-2 hover:text-[#5979f5]">
                         <i class="fas fa-tags"></i><span>Kategori</span>
                     </a>
-                    <a href="#" class="flex items-center gap-2 hover:text-[#5979f5]">
+                    <a href="{{ route('admin.transactions.index') }}"
+                        class="flex items-center gap-2 hover:text-[#5979f5]">
                         <i class="fas fa-shopping-cart"></i><span>Transaksi</span>
                     </a>
-                    <a href="#" class="flex items-center gap-2 hover:text-[#5979f5]">
+                    <a href="{{ route('admin.shipments.index') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
                         <i class="fas fa-truck"></i><span>Pengiriman</span>
                     </a>
                     <a href="{{ route('admin.users.index') }}" class="flex items-center gap-2 hover:text-[#5979f5]">
@@ -139,14 +136,14 @@
             sidebar.classList.toggle('sidebar-hidden');
         });
 
-        userDropdownBtn.addEventListener('click', (e) => {
+        userDropdownBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             userDropdownMenu.classList.toggle('hidden');
         });
 
         window.addEventListener('click', function(e) {
-            if (!userDropdownBtn.contains(e.target)) {
-                userDropdownMenu.classList.add('hidden');
+            if (!userDropdownBtn?.contains(e.target)) {
+                userDropdownMenu?.classList.add('hidden');
             }
         });
     </script>

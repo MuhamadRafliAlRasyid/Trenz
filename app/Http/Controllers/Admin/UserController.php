@@ -21,10 +21,15 @@ class UserController extends Controller
     public function show($id)
     {
         $user = User::findOrFail($id);
-        $transactions = Transaction::where('user_id', $user->id)->get(); // Get transactions for this user
+
+        $transactions = Transaction::with('details.product')
+            ->where('user_id', $user->id)
+            ->get();
+
 
         return view('admin.users.show', compact('user', 'transactions'));
     }
+
 
     // Update user status (active/inactive)
     public function updateStatus(Request $request, $id)
