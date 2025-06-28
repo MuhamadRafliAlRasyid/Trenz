@@ -40,7 +40,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Keranjang belanja user
-    public function cartUtems()
+    public function cartItems()
     {
         return $this->hasMany(CartItem::class);
     }

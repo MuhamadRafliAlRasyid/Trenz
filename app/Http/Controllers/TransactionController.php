@@ -135,6 +135,16 @@ class TransactionController extends Controller
 
         return response()->json($categorized);
     }
+    public function getByOrderId($orderId)
+    {
+        $transaction = Transaction::where('order_id', $orderId)->with('details.product')->first();
+
+        if (!$transaction) {
+            return response()->json(['message' => 'Transaction not found'], 404);
+        }
+
+        return response()->json($transaction);
+    }
 
     // Menghasilkan Snap Token untuk transaksi Midtrans
     public function getSnapToken($id)

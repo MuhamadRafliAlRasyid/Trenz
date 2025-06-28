@@ -49,13 +49,11 @@ class PaymentController extends Controller
                 'email' => $transaction->user->email ?? 'noemail@example.com',
             ],
             'callbacks' => [
-                'callbacks' => [
-                    'finish' => 'https://2c38-36-70-25-23.ngrok-free.app/api/home',
-                ],
-
+                'finish' => 'https://6015-36-70-25-94.ngrok-free.app/transaction-success'
             ],
-            'notification_url' => 'https://2c38-36-70-25-23.ngrok-free.app/api/midtrans/notification'
+            'notification_url' => 'https://6015-36-70-25-94.ngrok-free.app/api/midtrans/notification'
         ];
+
 
         try {
             // Konfigurasi Midtrans
@@ -95,9 +93,7 @@ class PaymentController extends Controller
      */
     public function handleNotification(Request $request)
     {
-        Log::info('Midtrans Notification Received', [
-            'json' => $request->all()
-        ]);
+        Log::info('MIDTRANS NOTIFIKASI MASUK', $request->all());
 
         // Ambil data notifikasi
         $data = $request->all();

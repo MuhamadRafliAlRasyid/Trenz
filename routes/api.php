@@ -31,6 +31,8 @@ Route::post('/login/customer', [AuthController::class, 'loginCustomer']);
 Route::post('/login/admin', [AuthController::class, 'loginAdmin']);
 Route::post('/register/customer', [AuthController::class, 'registerCustomer']);
 Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
+Route::post('/register/courier', [AuthController::class, 'registerCourier']);
+Route::post('/login/courier', [AuthController::class, 'loginCourier']);
 
 
 // Email verification and resend
@@ -38,6 +40,8 @@ Route::post('/verify-email', [AuthController::class, 'verify']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerificationEmail']);
 
 Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification']);
+Route::get('/api/transactions/order/{orderId}', [TransactionController::class, 'getByOrderId']);
+
 // Logout and refresh token
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/refresh-token', [AuthController::class, 'refreshToken']);
@@ -62,6 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart', [CartItemController::class, 'store']);
     Route::put('/cart/{cartItem}', [CartItemController::class, 'update']);
     Route::delete('/cart/{cartItem}', [CartItemController::class, 'destroy']);
+    Route::get('/wishlist', [CartItemController::class, 'wishlist']);
+    Route::post('/wishlist', [CartItemController::class, 'addToWishlist']);
+    Route::delete('/wishlist/{productId}', [CartItemController::class, 'removeFromWishlist']);
+
     // Address-related routes
     Route::get('/addresses', [AddressController::class, 'index']);
     Route::post('/addresses', [AddressController::class, 'store']);
@@ -80,6 +88,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cost', [ShippingController::class, 'getCost']);
     Route::post('/shipping/options', [DeliveryController::class, 'getShippingOptions']);
     Route::post('/delivery', [DeliveryController::class, 'store']);
+    Route::get('/courier/deliveries', [DeliveryController::class, 'index']);
+    Route::patch('/courier/deliveries/{id}/location', [DeliveryController::class, 'updateLocation']);
+    Route::patch('/courier/deliveries/{id}/status', [DeliveryController::class, 'updateStatus']);
+    Route::post('/courier/location/update', [DeliveryController::class, 'updateLocation']);
+    Route::get('/courier/location/{orderId}', [DeliveryController::class, 'getCourierLocation']);
 
 
     // Payment
@@ -88,6 +101,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/midtrans/token/{id}', [PaymentController::class, 'getSnapToken']);
     Route::post('/midtrans/callback', [MidtransCallbackController::class, 'callback']);
 });
+
+
+
 
 // // Admin-only API (via middleware role:admin)
 // Route::prefix('admin')->name('admin.')->middleware('auth:sanctum')->group(function () {

@@ -16,7 +16,8 @@ return [
     'allowed_origins' => [
         'http://localhost:4200',
         'http://localhost:8100',
-        'https://dff2-36-70-31-236.ngrok-free.app',
+        'https://1bf3-36-70-25-94.ngrok-free.app',
+        '*.ngrok-free.app',
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],

@@ -3,51 +3,83 @@
 namespace App\Http\Controllers;
 
 use App\Models\Delivery;
-use App\Services\RajaOngkirService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DeliveryController extends Controller
 {
-    // Get list ongkir dari RajaOngkir
-    public function getShippingOptions(Request $request, RajaOngkirService $service)
+    // Middleware khusus kurir
+
+    // 1. Ambil semua pengiriman milik kurir yang sedang login
+    public function index()
     {
-        $validated = $request->validate([
-            'origin' => 'required|integer',
-            'destination' => 'required|integer',
-            'weight' => 'required|integer',
-            'courier' => 'required|string',
-        ]);
-
-        $costs = $service->getCost(
-            $validated['origin'],
-            $validated['destination'],
-            $validated['weight'],
-            $validated['courier']
-        );
-
-        return response()->json($costs);
-    }
-
-    // Simpan pilihan kurir dari checkout
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'transaction_id' => 'required|exists:transactions,id',
-            'courier_type' => 'required|in:internal,external',
-            'courier_id' => 'nullable|exists:users,id',
-            'external_service' => 'nullable|string',
-            'external_cost' => 'nullable|integer',
-            'courier_name' => 'nullable|string',
-            'courier_service' => 'nullable|string',
-            'shipping_cost' => 'nullable|integer',
-            'tracking_number' => 'nullable|string',
-        ]);
-
-        $delivery = Delivery::create($validated);
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
         return response()->json([
-            'message' => 'Delivery option saved successfully',
-            'data' => $delivery
-        ], 201);
+            'deliveries' => Delivery::where('courier_id', $user->id)->get()
+        ]);
+    }
+
+
+    // 2. Update status pengiriman (in_progress → done)
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:in_progress,done'
+        ]);
+
+        $delivery = Delivery::where('id', $id)
+            ->where('courier_id', Auth::id())
+            ->firstOrFail();
+
+        $delivery->status = $request->status;
+        $delivery->save();
+
+        return response()->json(['message' => 'Status updated successfully']);
+    }
+
+    // 3. Update lokasi kurir (dari aplikasi Ionic)
+    public function updateLocation(Request $request, $id)
+    {
+        $request->validate([
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+        ]);
+
+        $delivery = Delivery::where('id', $id)
+            ->where('courier_id', Auth::id())
+            ->where('status', 'in_progress')
+            ->first();
+
+        if (!$delivery) {
+            return response()->json(['message' => 'No active delivery found'], 404);
+        }
+
+        $delivery->latitude = $request->lat;
+        $delivery->longitude = $request->lng;
+        $delivery->save();
+
+        return response()->json(['message' => 'Location updated']);
+    }
+
+    // 4. Ambil lokasi kurir (oleh customer)
+    public function getCourierLocation($orderId)
+    {
+        $delivery = Delivery::whereHas('transaction', function ($query) use ($orderId) {
+            $query->where('id', $orderId);
+        })->first();
+
+        if (!$delivery) {
+            return response()->json(['message' => 'Delivery not found'], 404);
+        }
+
+        return response()->json([
+            'lat' => $delivery->latitude,
+            'lng' => $delivery->longitude,
+            'status' => $delivery->status,
+        ]);
     }
 }
